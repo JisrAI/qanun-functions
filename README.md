@@ -1,11 +1,34 @@
-# Document Sync Azure Functions
+# Qanun Functions
 
-This project contains Azure Functions for syncing documents to Elasticsearch using a serverless architecture.
+Azure Functions for efficient document syncing to Elasticsearch. This serverless solution handles batch processing of legal documents with reliable queueing and error handling.
 
-## Functions
+## Project Structure
 
-1. `sync-documents` - HTTP trigger function that receives documents and queues them for processing
-2. `process-documents` - Queue trigger function that processes document batches and indexes them in Elasticsearch
+```
+qanun-functions/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # GitHub Actions deployment workflow
+├── sync-documents/         # HTTP trigger function
+│   ├── function.json      # Function bindings
+│   └── __init__.py        # Function implementation
+├── process-documents/      # Queue trigger function
+│   ├── function.json      # Function bindings
+│   └── __init__.py        # Function implementation
+├── host.json              # Function app settings
+├── local.settings.json    # Local development settings
+├── requirements.txt       # Python dependencies
+└── README.md             # This file
+```
+
+## Features
+
+- HTTP endpoint for document ingestion
+- Queue-based batch processing
+- Efficient Elasticsearch bulk indexing
+- Error handling with retries
+- Monitoring and logging
+- GitHub Actions automated deployment
 
 ## Local Development
 
@@ -31,8 +54,21 @@ pip install -r requirements.txt
 ```
 
 3. Configure local settings:
-   - Copy `local.settings.json` and update values as needed
-   - Ensure Azure Storage Emulator is running for local queue storage
+   - Copy `local.settings.json.example` to `local.settings.json`
+   - Update the following settings:
+     ```json
+     {
+       "IsEncrypted": false,
+       "Values": {
+         "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+         "FUNCTIONS_WORKER_RUNTIME": "python",
+         "ES_URL": "your-elasticsearch-url",
+         "ELASTIC_API_KEY": "your-api-key",
+         "ELASTIC_CLOUD_ID": "your-cloud-id",
+         "ELASTIC_VERIFY_CERTS": "true"
+       }
+     }
+     ```
 
 4. Run the functions locally:
 ```bash
@@ -43,7 +79,7 @@ func start
 
 ### Option 1: GitHub Actions (Recommended)
 
-This project includes a GitHub Actions workflow for automated deployment. To use it:
+This repository includes a GitHub Actions workflow for automated deployment:
 
 1. Create a new Function App in Azure:
    - Runtime stack: Python
@@ -51,42 +87,23 @@ This project includes a GitHub Actions workflow for automated deployment. To use
    - Operating System: Linux
    - Plan type: Consumption (Serverless)
 
-2. Configure application settings in Azure Portal:
-   - ES_URL: Elasticsearch URL
-   - ELASTIC_API_KEY: API key for Elasticsearch
-   - ELASTIC_CLOUD_ID: Cloud ID for Elasticsearch
-   - ELASTIC_VERIFY_CERTS: "true"
+2. Configure application settings in Azure Portal with the same settings as in local.settings.json
 
-3. Get the publish profile:
-   - Go to your Function App in Azure Portal
-   - Click on "Get publish profile"
-   - Copy the entire content
+3. Add your publish profile to GitHub secrets:
+   - Get the publish profile from Azure Portal
+   - Add it as `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` in repository secrets
 
-4. Add the publish profile to GitHub secrets:
-   - Go to your GitHub repository settings
-   - Navigate to Secrets and variables > Actions
-   - Create a new secret named `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`
-   - Paste the publish profile content
-
-5. The workflow will automatically deploy when you push changes to the `main` branch.
-   You can also manually trigger the workflow from the Actions tab.
+4. The workflow will automatically deploy when you push to main
 
 ### Option 2: Manual Deployment
 
-1. Using Azure Functions Core Tools:
 ```bash
 func azure functionapp publish <app-name>
 ```
 
-2. Using VS Code:
-   - Install Azure Functions extension
-   - Right-click on the project folder
-   - Select "Deploy to Function App..."
-   - Follow the prompts
+## API Usage
 
-### Usage
-
-Send documents to the sync endpoint:
+### Sync Documents
 
 ```bash
 curl -X POST https://<app-name>.azurewebsites.net/api/documents/sync \
@@ -95,13 +112,31 @@ curl -X POST https://<app-name>.azurewebsites.net/api/documents/sync \
   -d '[
     {
       "doc_id": "example_1",
-      "title": "Example Document",
-      ...
+      "title": {
+        "ar": "عنوان المستند",
+        "en": "Document Title"
+      },
+      "date": "2024-01-01",
+      "paragraphs": [
+        {
+          "text": {
+            "ar": "نص الفقرة",
+            "en": "Paragraph text"
+          }
+        }
+      ]
     }
   ]'
 ```
 
-The documents will be queued and processed in batches of 50, then indexed in Elasticsearch.
+Response:
+```json
+{
+  "status": "success",
+  "message": "Queued 1 documents for indexing",
+  "total_batches": 1
+}
+```
 
 ## Monitoring
 
@@ -112,6 +147,19 @@ The documents will be queued and processed in batches of 50, then indexed in Ela
 
 ## Error Handling
 
-- Failed document processing will be retried up to 5 times (configurable in host.json)
+- Failed document processing will be retried up to 5 times
 - Errors are logged to Application Insights
 - Failed documents are logged with their error details
+- Queue visibility timeout ensures no lost messages
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+MIT

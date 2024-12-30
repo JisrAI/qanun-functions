@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "ES_URL": "https://your-elasticsearch-url",
+    "ELASTIC_API_KEY": "your-api-key",
+    "ELASTIC_CLOUD_ID": "your-cloud-id",
+    "ELASTIC_VERIFY_CERTS": "true",
+    "WEBSITE_TIME_ZONE": "UTC"
+  }
+}
